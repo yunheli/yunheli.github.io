@@ -1,0 +1,37 @@
+language: node_js
+node_js: stable
+
+# Travis-CI Caching
+cache:
+  directories:
+    - node_modules
+
+
+# S: Build Lifecycle
+install:
+  - npm install
+
+before_script:
+  - npm install -g hexo-cli
+
+script:
+  - hexo generate
+
+after_script:
+  - cd public
+  - git init
+  - git config user.name "yunheli"
+  - git config user.email "liyunhehappy6@163.com"
+  - git add .
+  - git commit -m "Update docs"
+  - git push --force --quiet "https://${GH_TOKEN}@${GH_REF}" master:gh-pages
+# E: Build LifeCycle
+
+branches:
+  only:
+    - develop
+env:
+  global:
+    - GH_REF: github.com/yunheli/yunheli.github.io.git
+    - secure: "nQ1P0YesSJAxbXx/234eD4jRiy5zZSNnT/R21bTEh7IeY1TBmJ/eqIk57nyMN04SIcV+mlfa+PHNFe5IhgnfWYW5GKFur4a7zAy1R8Rh0BLIKPfjfMJq6J64Iym/bK5OMBKzbL7eFt8aH29h3h/d0QsgVuxm95mqYXz17IPqsLS0yJOyPblCrU9Vc7ics0EcuWd4kwiGbn3Of5VAn9o9qCB67hlY0Y07MdOvpDkbJ1Y/s7xO2Bo/iV2XQDEylqPCiwP7hCDhfLGutfBf6Hlzx9i1e2ODYabaoHmjnDJCG2WuzQa7VmnGAYxbU+/Dlhc00rNnhpRw04ZAITbE74wIzvbq+8Er4ZrgtmlYvVEXEAMdLCUyHg/PDHl8UniWns1ayT5hSYCcoYj6v8bTzNht/SgPe7DMRhb/gNvQaGnzqpXxO9596dfjUee1btTUbfufqf43uBLlgFrEgVsNP7D3gKLHNlgk0VvYyU3fo8UGOT73xhROoJv3o5dNlZ411THL4UMCVbbEcMtpqqxEpLunxy84mTC2nrF+Fj0c2fFLenAQ7eprOdmRI0uhQZsJYGRiaQ6hXPd9E01LmJKbJoi+KBHaOriU6BLdUrOQrdRix7Gy2/bPPPb2Tn1/tuFSx850d5T8I1NEJiai+ZCZQQPKEPDErkFtFA2zWGUlFTBwoak="
+

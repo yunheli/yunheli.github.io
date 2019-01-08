@@ -2,7 +2,7 @@
 layout: post
 title: 数据库敏感信息加密在ruby中的应用
 date: 2017-05-7 00:00
-tags: [secure, ruby]
+tags: [secure, ruby, AES, RSA]
 ---
 
 ## 数据库敏感信息加密研究

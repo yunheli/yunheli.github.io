@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Stack sort algorithm
-date: 2018-01-01 00:00
+date: 2018-01-03 00:00
 tags: [java, algorithm]
 ---
 

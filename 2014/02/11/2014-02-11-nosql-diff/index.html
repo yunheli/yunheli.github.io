@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="mongodb,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="MemcachedMemcached的优点：12Memcached可以利用多核优势，单实例吞吐量极高，可以达到几十万QPS（取决于key、value的字节大小以及服务器硬件性能，日常环境中QPS高峰大约在4-6w左右）。适用于最大程度扛量。支持直接配置为session handle。 Memcached的局限性：只支持简单的key/value数据结构，不像Redis可以支持丰富的数据类型。 无法进">
+<meta name="keywords" content="mongodb">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MongoDB、Redis、Memcached 的不同？">
+<meta property="og:url" content="http://yunheli.github.io/2014/02/11/2014-02-11-nosql-diff/index.html">
+<meta property="og:site_name" content="Will">
+<meta property="og:description" content="MemcachedMemcached的优点：12Memcached可以利用多核优势，单实例吞吐量极高，可以达到几十万QPS（取决于key、value的字节大小以及服务器硬件性能，日常环境中QPS高峰大约在4-6w左右）。适用于最大程度扛量。支持直接配置为session handle。 Memcached的局限性：只支持简单的key/value数据结构，不像Redis可以支持丰富的数据类型。 无法进">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-01-10T09:38:05.658Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MongoDB、Redis、Memcached 的不同？">
+<meta name="twitter:description" content="MemcachedMemcached的优点：12Memcached可以利用多核优势，单实例吞吐量极高，可以达到几十万QPS（取决于key、value的字节大小以及服务器硬件性能，日常环境中QPS高峰大约在4-6w左右）。适用于最大程度扛量。支持直接配置为session handle。 Memcached的局限性：只支持简单的key/value数据结构，不像Redis可以支持丰富的数据类型。 无法进">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yunheli.github.io/2014/02/11/2014-02-11-nosql-diff/">
+
+
+
+
+
+  <title>MongoDB、Redis、Memcached 的不同？ | Will</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Will</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">will's blogs</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yunheli.github.io/2014/02/11/2014-02-11-nosql-diff/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Will">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Will">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">MongoDB、Redis、Memcached 的不同？</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2014-02-11T00:00:00+00:00">
+                2014-02-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="Memcached"><a href="#Memcached" class="headerlink" title="Memcached"></a>Memcached</h3><h4 id="Memcached的优点："><a href="#Memcached的优点：" class="headerlink" title="Memcached的优点："></a><code>Memcached的优点：</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Memcached可以利用多核优势，单实例吞吐量极高，可以达到几十万QPS（取决于key、value的字节大小以及服务器硬件性能，日常环境中QPS高峰大约在4-6w左右）。适用于最大程度扛量。</span><br><span class="line">支持直接配置为session handle。</span><br></pre></td></tr></table></figure>
+<h4 id="Memcached的局限性："><a href="#Memcached的局限性：" class="headerlink" title="Memcached的局限性："></a><code>Memcached的局限性：</code></h4><pre><code>只支持简单的key/value数据结构，不像Redis可以支持丰富的数据类型。
+无法进行持久化，数据不能备份，只能用于缓存使用，且重启后数据全部丢失。
+无法进行数据同步，不能将MC中的数据迁移到其他MC实例中。
+Memcached内存分配采用Slab Allocation机制管理内存，value大小分布差异较大时会造成内存利用率降低，并引发低利用率时依然出现踢出等问题。需要用户注重value设计。
+</code></pre><h3 id="Redis"><a href="#Redis" class="headerlink" title="Redis"></a>Redis</h3><h4 id="Redis的优点："><a href="#Redis的优点：" class="headerlink" title="Redis的优点："></a><code>Redis的优点：</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">支持多种数据结构，如 string（字符串）、 list(双向链表)、dict(hash表)、set(集合）、zset(排序set)、hyperloglog（基数估算）</span><br><span class="line">支持持久化操作，可以进行aof及rdb数据持久化到磁盘，从而进行数据备份或数据恢复等操作，较好的防止数据丢失的手段。</span><br><span class="line">支持通过Replication进行数据复制，通过master-slave机制，可以实时进行数据的同步复制，支持多级复制和增量复制，master-slave机制是Redis进行HA的重要手段。</span><br><span class="line">单线程请求，所有命令串行执行，并发情况下不需要考虑数据一致性问题。</span><br><span class="line">支持pub/sub消息订阅机制，可以用来进行消息订阅与通知。</span><br><span class="line">支持简单的事务需求，但业界使用场景很少，并不成熟。</span><br></pre></td></tr></table></figure>
+<h4 id="Redis的局限性："><a href="#Redis的局限性：" class="headerlink" title="Redis的局限性："></a><code>Redis的局限性：</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Redis只能使用单线程，性能受限于CPU性能，故单实例CPU最高才可能达到5-6wQPS每秒（取决于数据结构，数据大小以及服务器硬件性能，日常环境中QPS高峰大约在1-2w左右）。</span><br><span class="line">支持简单的事务需求，但业界使用场景很少，并不成熟，既是优点也是缺点。</span><br><span class="line">Redis在string类型上会消耗较多内存，可以使用dict（hash表）压缩存储以降低内存耗用。</span><br><span class="line">Mc和Redis都是Key-Value类型，不适合在不同数据集之间建立关系，也不适合进行查询搜索。比如redis的keys pattern这种匹配操作，对redis的性能是灾难。</span><br></pre></td></tr></table></figure>
+<h3 id="mongoDB"><a href="#mongoDB" class="headerlink" title="mongoDB"></a>mongoDB</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mongoDB 是一种文档性的数据库。先解释一下文档的数据库，即可以存放xml、json、bson类型系那个的数据。</span><br><span class="line">这些数据具备自述性（self-describing），呈现分层的树状数据结构。redis可以用hash存放简单关系型数据。</span><br><span class="line">mongoDB 存放json格式数据。</span><br><span class="line">适合场景：事件记录、内容管理或者博客平台，比如评论系统。</span><br></pre></td></tr></table></figure>
+<h4 id="1-mongodb持久化原理"><a href="#1-mongodb持久化原理" class="headerlink" title="1.mongodb持久化原理"></a><code>1.mongodb持久化原理</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mongodb与mysql不同，mysql的每一次更新操作都会直接写入硬盘，但是mongo不会，做为内存型数据库，数据操作会先写入内存，然后再会持久化到硬盘中去，那么mongo是如何持久化的呢</span><br><span class="line">mongodb在启动时，专门初始化一个线程不断循环（除非应用crash掉），用于在一定时间周期内来从defer队列中获取要持久化的数据并写入到磁盘的journal(日志)和mongofile(数据)处，当然因为它不是在用户添加记录时就写到磁盘上，所以按mongodb开发者说，它不会造成性能上的损耗，因为看过代码发现，当进行CUD操作时，记录(Record类型)都被放入到defer队列中以供延时批量（groupcommit）提交写入，但相信其中时间周期参数是个要认真考量的参数，系统为90毫秒，如果该值更低的话，可能会造成频繁磁盘操作，过高又会造成系统宕机时数据丢失过。</span><br></pre></td></tr></table></figure>
+<h4 id="2-什么是NoSQL数据库？NoSQL和RDBMS有什么区别？在哪些情况下使用和不使用NoSQL数据库？"><a href="#2-什么是NoSQL数据库？NoSQL和RDBMS有什么区别？在哪些情况下使用和不使用NoSQL数据库？" class="headerlink" title="2.什么是NoSQL数据库？NoSQL和RDBMS有什么区别？在哪些情况下使用和不使用NoSQL数据库？"></a><code>2.什么是NoSQL数据库？NoSQL和RDBMS有什么区别？在哪些情况下使用和不使用NoSQL数据库？</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">NoSQL是非关系型数据库，NoSQL = Not Only SQL。</span><br><span class="line">关系型数据库采用的结构化的数据，NoSQL采用的是键值对的方式存储数据。</span><br><span class="line">在处理非结构化/半结构化的大数据时；在水平方向上进行扩展时；随时应对动态增加的数据项时可以优先考虑使用NoSQL数据库。</span><br><span class="line">在考虑数据库的成熟度；支持；分析和商业智能；管理及专业性等问题时，应优先考虑关系型数据库。</span><br></pre></td></tr></table></figure>
+<h4 id="3-MySQL和MongoDB之间最基本的区别是什么？"><a href="#3-MySQL和MongoDB之间最基本的区别是什么？" class="headerlink" title="3.MySQL和MongoDB之间最基本的区别是什么？"></a><code>3.MySQL和MongoDB之间最基本的区别是什么？</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">关系型数据库与非关系型数据库的区别，即数据存储结构的不同。</span><br></pre></td></tr></table></figure>
+<h4 id="4-MongoDB的特点是什么？"><a href="#4-MongoDB的特点是什么？" class="headerlink" title="4.MongoDB的特点是什么？"></a><code>4.MongoDB的特点是什么？</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">（1）面向文档</span><br><span class="line">（2）高性能</span><br><span class="line">（3）高可用</span><br><span class="line">（4）易扩展</span><br><span class="line">（5）丰富的查询语言</span><br></pre></td></tr></table></figure>
+<h4 id="5-MongoDB支持存储过程吗？如果支持的话，怎么用？"><a href="#5-MongoDB支持存储过程吗？如果支持的话，怎么用？" class="headerlink" title="5.MongoDB支持存储过程吗？如果支持的话，怎么用？"></a><code>5.MongoDB支持存储过程吗？如果支持的话，怎么用？</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MongoDB支持存储过程，它是javascript写的，保存在db.system.js表中。</span><br></pre></td></tr></table></figure>
+<h4 id="6-如何理解MongoDB中的GridFS机制，MongoDB为何使用GridFS来存储文件？"><a href="#6-如何理解MongoDB中的GridFS机制，MongoDB为何使用GridFS来存储文件？" class="headerlink" title="6.如何理解MongoDB中的GridFS机制，MongoDB为何使用GridFS来存储文件？"></a><code>6.如何理解MongoDB中的GridFS机制，MongoDB为何使用GridFS来存储文件？</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GridFS是一种将大型文件存储在MongoDB中的文件规范。使用GridFS可以将大文件分隔成多个小文档存放，这样我们能够有效的保存大文档，而且解决了BSON对象有限制的问题。</span><br></pre></td></tr></table></figure>
+<h4 id="7-为什么MongoDB的数据文件很大？"><a href="#7-为什么MongoDB的数据文件很大？" class="headerlink" title="7.为什么MongoDB的数据文件很大？"></a><code>7.为什么MongoDB的数据文件很大？</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MongoDB采用的预分配空间的方式来防止文件碎片。</span><br></pre></td></tr></table></figure>
+<h4 id="8-当更新一个正在被迁移的块（Chunk）上的文档时会发生什么？"><a href="#8-当更新一个正在被迁移的块（Chunk）上的文档时会发生什么？" class="headerlink" title="8.当更新一个正在被迁移的块（Chunk）上的文档时会发生什么？"></a><code>8.当更新一个正在被迁移的块（Chunk）上的文档时会发生什么？</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">更新操作会立即发生在旧的块（Chunk）上，然后更改才会在所有权转移前复制到新的分片上。</span><br></pre></td></tr></table></figure>
+<h4 id="9-MongoDB在A-B-C-上建立索引，查询A-B-C-和A-C-B-都会使用索引吗？"><a href="#9-MongoDB在A-B-C-上建立索引，查询A-B-C-和A-C-B-都会使用索引吗？" class="headerlink" title="9.MongoDB在A:{B,C}上建立索引，查询A:{B,C}和A:{C,B}都会使用索引吗？"></a><code>9.MongoDB在A:{B,C}上建立索引，查询A:{B,C}和A:{C,B}都会使用索引吗？</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">不会，只会在A:&#123;B,C&#125;上使用索引。</span><br></pre></td></tr></table></figure>
+<h4 id="10-如果一个分片（Shard）停止或很慢的时候，发起一个查询会怎样？"><a href="#10-如果一个分片（Shard）停止或很慢的时候，发起一个查询会怎样？" class="headerlink" title="10.如果一个分片（Shard）停止或很慢的时候，发起一个查询会怎样？"></a><code>10.如果一个分片（Shard）停止或很慢的时候，发起一个查询会怎样？</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">如果一个分片停止了，除非查询设置了“Partial”选项，否则查询会返回一个错误。如果一个分片响应很慢，MongoDB会等待它的响应。</span><br></pre></td></tr></table></figure>
+<h3 id="Redis、Memcache和MongoDB的区别"><a href="#Redis、Memcache和MongoDB的区别" class="headerlink" title="Redis、Memcache和MongoDB的区别"></a>Redis、Memcache和MongoDB的区别</h3><p>从以下几个维度，对redis、memcache、mongoDB 做了对比，</p>
+<h4 id="1、性能"><a href="#1、性能" class="headerlink" title="1、性能"></a><code>1、性能</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">都比较高，性能对我们来说应该都不是瓶颈</span><br><span class="line">总体来讲，TPS方面redis和memcache差不多，要大于mongodb</span><br></pre></td></tr></table></figure>
+<h4 id="2、操作的便利性"><a href="#2、操作的便利性" class="headerlink" title="2、操作的便利性"></a><code>2、操作的便利性</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">memcache数据结构单一</span><br><span class="line">redis丰富一些，数据操作方面，redis更好一些，较少的网络IO次数</span><br><span class="line">mongodb支持丰富的数据表达，索引，最类似关系型数据库，支持的查询语言非常丰富</span><br></pre></td></tr></table></figure>
+<h4 id="3、内存空间的大小和数据量的大小"><a href="#3、内存空间的大小和数据量的大小" class="headerlink" title="3、内存空间的大小和数据量的大小"></a><code>3、内存空间的大小和数据量的大小</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">redis在2.0版本后增加了自己的VM特性，突破物理内存的限制；可以对key value设置过期时间（类似memcache）</span><br><span class="line">memcache可以修改最大可用内存,采用LRU算法</span><br><span class="line">mongoDB适合大数据量的存储，依赖操作系统VM做内存管理，吃内存也比较厉害，服务不要和别的服务在一起</span><br></pre></td></tr></table></figure>
+<h4 id="4、可用性（单点问题）"><a href="#4、可用性（单点问题）" class="headerlink" title="4、可用性（单点问题）"></a><code>4、可用性（单点问题）</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">对于单点问题，</span><br><span class="line">redis，依赖客户端来实现分布式读写；主从复制时，每次从节点重新连接主节点都要依赖整个快照,无增量复制，因性能和效率问题，</span><br><span class="line">所以单点问题比较复杂；不支持自动sharding,需要依赖程序设定一致hash 机制。</span><br><span class="line">一种替代方案是，不用redis本身的复制机制，采用自己做主动复制（多份存储），或者改成增量复制的方式（需要自己实现），一致性问题和性能的权衡</span><br><span class="line">Memcache本身没有数据冗余机制，也没必要；对于故障预防，采用依赖成熟的hash或者环状的算法，解决单点故障引起的抖动问题。</span><br><span class="line">mongoDB支持master-slave,replicaset（内部采用paxos选举算法，自动故障恢复）,auto sharding机制，对客户端屏蔽了故障转移和切分机制。</span><br></pre></td></tr></table></figure>
+<h4 id="5、可靠性（持久化）"><a href="#5、可靠性（持久化）" class="headerlink" title="5、可靠性（持久化）"></a><code>5、可靠性（持久化）</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">对于数据持久化和数据恢复，</span><br><span class="line">redis支持（快照、AOF）：依赖快照进行持久化，aof增强了可靠性的同时，对性能有所影响</span><br><span class="line">memcache不支持，通常用在做缓存,提升性能；</span><br><span class="line">MongoDB从1.8版本开始采用binlog方式支持持久化的可靠性</span><br></pre></td></tr></table></figure>
+<h4 id="6、数据一致性（事务支持）"><a href="#6、数据一致性（事务支持）" class="headerlink" title="6、数据一致性（事务支持）"></a><code>6、数据一致性（事务支持）</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Memcache 在并发场景下，用cas保证一致性</span><br><span class="line">redis事务支持比较弱，只能保证事务中的每个操作连续执行</span><br><span class="line">mongoDB不支持事务</span><br></pre></td></tr></table></figure>
+<h4 id="7、数据分析"><a href="#7、数据分析" class="headerlink" title="7、数据分析"></a><code>7、数据分析</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mongoDB内置了数据分析的功能(mapreduce),其他不支持</span><br></pre></td></tr></table></figure>
+<h4 id="8、应用场景"><a href="#8、应用场景" class="headerlink" title="8、应用场景"></a><code>8、应用场景</code></h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">redis：数据量较小的更性能操作和运算上</span><br><span class="line">memcache：用于在动态系统中减少数据库负载，提升性能;做缓存，提高性能（适合读多写少，对于数据量比较大，可以采用sharding）</span><br><span class="line">MongoDB:主要解决海量数据的访问效率问题</span><br></pre></td></tr></table></figure>
+<ul>
+<li>转自 <a href="https://yq.aliyun.com/articles/38224" target="_blank" rel="noopener">阿里云</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/mongodb/" rel="tag"># mongodb</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2014/01/20/2014-1-20-mongodb-methods/" rel="next" title="MongoDB 常用命令？">
+                <i class="fa fa-chevron-left"></i> MongoDB 常用命令？
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2014/05/15/2014-05-15-mongodb-global-lock/" rel="prev" title="MongoDB的全局锁问题">
+                MongoDB的全局锁问题 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Will</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">24</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/yunheli" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:liyunhehappy6@163.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#Memcached"><span class="nav-number">1.</span> <span class="nav-text">Memcached</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Memcached的优点："><span class="nav-number">1.1.</span> <span class="nav-text">Memcached的优点：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Memcached的局限性："><span class="nav-number">1.2.</span> <span class="nav-text">Memcached的局限性：</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Redis"><span class="nav-number">2.</span> <span class="nav-text">Redis</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Redis的优点："><span class="nav-number">2.1.</span> <span class="nav-text">Redis的优点：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Redis的局限性："><span class="nav-number">2.2.</span> <span class="nav-text">Redis的局限性：</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mongoDB"><span class="nav-number">3.</span> <span class="nav-text">mongoDB</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-mongodb持久化原理"><span class="nav-number">3.1.</span> <span class="nav-text">1.mongodb持久化原理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-什么是NoSQL数据库？NoSQL和RDBMS有什么区别？在哪些情况下使用和不使用NoSQL数据库？"><span class="nav-number">3.2.</span> <span class="nav-text">2.什么是NoSQL数据库？NoSQL和RDBMS有什么区别？在哪些情况下使用和不使用NoSQL数据库？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-MySQL和MongoDB之间最基本的区别是什么？"><span class="nav-number">3.3.</span> <span class="nav-text">3.MySQL和MongoDB之间最基本的区别是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-MongoDB的特点是什么？"><span class="nav-number">3.4.</span> <span class="nav-text">4.MongoDB的特点是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-MongoDB支持存储过程吗？如果支持的话，怎么用？"><span class="nav-number">3.5.</span> <span class="nav-text">5.MongoDB支持存储过程吗？如果支持的话，怎么用？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#6-如何理解MongoDB中的GridFS机制，MongoDB为何使用GridFS来存储文件？"><span class="nav-number">3.6.</span> <span class="nav-text">6.如何理解MongoDB中的GridFS机制，MongoDB为何使用GridFS来存储文件？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#7-为什么MongoDB的数据文件很大？"><span class="nav-number">3.7.</span> <span class="nav-text">7.为什么MongoDB的数据文件很大？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#8-当更新一个正在被迁移的块（Chunk）上的文档时会发生什么？"><span class="nav-number">3.8.</span> <span class="nav-text">8.当更新一个正在被迁移的块（Chunk）上的文档时会发生什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#9-MongoDB在A-B-C-上建立索引，查询A-B-C-和A-C-B-都会使用索引吗？"><span class="nav-number">3.9.</span> <span class="nav-text">9.MongoDB在A:{B,C}上建立索引，查询A:{B,C}和A:{C,B}都会使用索引吗？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#10-如果一个分片（Shard）停止或很慢的时候，发起一个查询会怎样？"><span class="nav-number">3.10.</span> <span class="nav-text">10.如果一个分片（Shard）停止或很慢的时候，发起一个查询会怎样？</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Redis、Memcache和MongoDB的区别"><span class="nav-number">4.</span> <span class="nav-text">Redis、Memcache和MongoDB的区别</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1、性能"><span class="nav-number">4.1.</span> <span class="nav-text">1、性能</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2、操作的便利性"><span class="nav-number">4.2.</span> <span class="nav-text">2、操作的便利性</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3、内存空间的大小和数据量的大小"><span class="nav-number">4.3.</span> <span class="nav-text">3、内存空间的大小和数据量的大小</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4、可用性（单点问题）"><span class="nav-number">4.4.</span> <span class="nav-text">4、可用性（单点问题）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5、可靠性（持久化）"><span class="nav-number">4.5.</span> <span class="nav-text">5、可靠性（持久化）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#6、数据一致性（事务支持）"><span class="nav-number">4.6.</span> <span class="nav-text">6、数据一致性（事务支持）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#7、数据分析"><span class="nav-number">4.7.</span> <span class="nav-text">7、数据分析</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#8、应用场景"><span class="nav-number">4.8.</span> <span class="nav-text">8、应用场景</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Will</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

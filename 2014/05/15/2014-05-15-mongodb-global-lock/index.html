@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="mongodb,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="MongoDB的全局锁问题 对MongoDB有所了解的人都知道，MongoDB有一个让人头疼的全局锁（读写锁，允许并发读，而写会阻塞所有的读写），要命的是这个锁不是表级的，不是库级的，而是整个Server级别的，这让人听起来是不是非常的蛋疼。   在2.0版本以前，这一问题一直没有得到解决，于是有人提出，在可预见某个update操作的记录可能在磁盘上时，为了减少写锁占用的时间，可以采用先读后写的方">
+<meta name="keywords" content="mongodb">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MongoDB的全局锁问题">
+<meta property="og:url" content="http://yunheli.github.io/2014/05/15/2014-05-15-mongodb-global-lock/index.html">
+<meta property="og:site_name" content="Will">
+<meta property="og:description" content="MongoDB的全局锁问题 对MongoDB有所了解的人都知道，MongoDB有一个让人头疼的全局锁（读写锁，允许并发读，而写会阻塞所有的读写），要命的是这个锁不是表级的，不是库级的，而是整个Server级别的，这让人听起来是不是非常的蛋疼。   在2.0版本以前，这一问题一直没有得到解决，于是有人提出，在可预见某个update操作的记录可能在磁盘上时，为了减少写锁占用的时间，可以采用先读后写的方">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://pic.yupoo.com/iammutex/BEa0XTSA/medium.jpg">
+<meta property="og:image" content="http://pic.yupoo.com/iammutex/BEa0XwZj/medium.jpg">
+<meta property="og:updated_time" content="2019-01-10T09:38:05.658Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MongoDB的全局锁问题">
+<meta name="twitter:description" content="MongoDB的全局锁问题 对MongoDB有所了解的人都知道，MongoDB有一个让人头疼的全局锁（读写锁，允许并发读，而写会阻塞所有的读写），要命的是这个锁不是表级的，不是库级的，而是整个Server级别的，这让人听起来是不是非常的蛋疼。   在2.0版本以前，这一问题一直没有得到解决，于是有人提出，在可预见某个update操作的记录可能在磁盘上时，为了减少写锁占用的时间，可以采用先读后写的方">
+<meta name="twitter:image" content="http://pic.yupoo.com/iammutex/BEa0XTSA/medium.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yunheli.github.io/2014/05/15/2014-05-15-mongodb-global-lock/">
+
+
+
+
+
+  <title>MongoDB的全局锁问题 | Will</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Will</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">will's blogs</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yunheli.github.io/2014/05/15/2014-05-15-mongodb-global-lock/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Will">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Will">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">MongoDB的全局锁问题</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2014-05-15T00:00:00+00:00">
+                2014-05-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="MongoDB的全局锁问题"><a href="#MongoDB的全局锁问题" class="headerlink" title="MongoDB的全局锁问题"></a>MongoDB的全局锁问题</h2><blockquote>
+<p>对<br>MongoDB有所了解的人都知道，MongoDB有一个让人头疼的全局锁（读写锁，允许并发读，而写会阻塞所有的读写），要命的是这个锁不是表级的，不是库级的，而是整个Server级别的，这让人听起来是不是非常的蛋疼。</p>
+</blockquote>
+<blockquote>
+<p>在2.0版本以前，这一问题一直没有得到解决，于是有人提出，在可预见某个update操作的记录可能在磁盘上时，为了减少写锁占用的时间，可以采用先读后写的方式，通过先读一次，将要操作的记录加载到内存中，再进行内存中的update，这样写锁就不包括将数据从磁盘加载到内存的时间了。<br>在可预见数据冷热的情况下，这种操作能够有一定的效果，但是很明显，这种变态的方法不应该是一个终极解决方案。</p>
+</blockquote>
+<blockquote>
+<p>值得庆幸的是，在2.0版本中，MongoDB宣称有很大程度的并发性能提升，而这一提升的基础正是解决了这个全局锁的问题。<br>解决的方法并不是通过减少锁粒度来解决，虽然collection级别的锁机制也正在开发中。（SERVER-1240）</p>
+</blockquote>
+<blockquote>
+<p>解决方法是通过对一些可能造成长时间锁占用的操作进行锁抑制。比如和我们上面的方法类似，在进行update操作时，如果发现需要更新的记录在磁盘上，那么这个锁就不会一直占用，而是等到将数据从磁盘加载到内存后再添加写锁进行update。</p>
+</blockquote>
+<blockquote>
+<p>而同理，对于其它一些可能耗时比较长的操作也可以采用类似的方法，通过将长时间占用的全局锁拆分成多个细粒度的小锁来使需要获取锁来进行的操作能够交错的执行，从而避免一夫当关万夫莫开的情况，主要包括下面一些操作：</p>
+</blockquote>
+<ul>
+<li>查询操作</li>
+<li>批量更新操作</li>
+<li>批量删除操作</li>
+<li>批量insert写入操作</li>
+</ul>
+<blockquote>
+<p>如果你还在使用2.0以前的版本，并且在并发性能上出现问题，可以考虑在2.0.x版本上进行一些性能测试并对你的MongoDB进行升级。<br>2.0版本中的改进听起来是可行的，然而他的实际效果如何呢，这里有两张性能测试图片，来自blog.pythonisito.com的测试。</p>
+</blockquote>
+<p><code>第一张是在不触发page faulting的情况下1.8版本和2.0版本在加了写锁后的性能对比，可以看出，在写操作能够直接在内存中完成的情况下，二者的性能几乎没有差别。</code></p>
+<p><img src="http://pic.yupoo.com/iammutex/BEa0XTSA/medium.jpg" alt="Alt text"></p>
+<p><code>第二张图是在写操作会触发page faulting的情况，也就是在1.8中，加写锁的时间会包括将数据从磁盘讲到内存的时间，而在2.0中不包括这段时间。可以看出2.0版本中情况好了很多，因为采用了锁抑制策略，使得产生page faulting后还能有较好并发性能。</code></p>
+<p><img src="http://pic.yupoo.com/iammutex/BEa0XwZj/medium.jpg" alt="Alt text"></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/mongodb/" rel="tag"># mongodb</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2014/02/11/2014-02-11-nosql-diff/" rel="next" title="MongoDB、Redis、Memcached 的不同？">
+                <i class="fa fa-chevron-left"></i> MongoDB、Redis、Memcached 的不同？
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2014/05/17/2017-5-17-redis-hole/" rel="prev" title="redis中遇到的坑">
+                redis中遇到的坑 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Will</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">24</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/yunheli" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:liyunhehappy6@163.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#MongoDB的全局锁问题"><span class="nav-number">1.</span> <span class="nav-text">MongoDB的全局锁问题</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Will</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

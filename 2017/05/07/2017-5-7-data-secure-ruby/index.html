@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="ruby,secure,AES,RSA,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="数据库敏感信息加密研究数据库敏感信息加密原因 鉴于之前有用户使用阿里云数据库遭到数据泄露问题，库中一部分用户的敏感信息是采用明文存储的，例如项目私钥、Git token、手机号、邮箱等  加密方案： 简单加密（对称加密）：对加密的信息采用对称加密，秘钥保存在本地 高级加密（非对称加密）：对敏感信息对称加密，对加密秘钥进行非对称加密，因为非对称加密对敏感信息大小有限制一般在1k以下，加密速度也和对称">
+<meta name="keywords" content="ruby,secure,AES,RSA">
+<meta property="og:type" content="article">
+<meta property="og:title" content="数据库敏感信息加密在ruby中的应用">
+<meta property="og:url" content="http://yunheli.github.io/2017/05/07/2017-5-7-data-secure-ruby/index.html">
+<meta property="og:site_name" content="Will">
+<meta property="og:description" content="数据库敏感信息加密研究数据库敏感信息加密原因 鉴于之前有用户使用阿里云数据库遭到数据泄露问题，库中一部分用户的敏感信息是采用明文存储的，例如项目私钥、Git token、手机号、邮箱等  加密方案： 简单加密（对称加密）：对加密的信息采用对称加密，秘钥保存在本地 高级加密（非对称加密）：对敏感信息对称加密，对加密秘钥进行非对称加密，因为非对称加密对敏感信息大小有限制一般在1k以下，加密速度也和对称">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-01-10T09:38:05.658Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="数据库敏感信息加密在ruby中的应用">
+<meta name="twitter:description" content="数据库敏感信息加密研究数据库敏感信息加密原因 鉴于之前有用户使用阿里云数据库遭到数据泄露问题，库中一部分用户的敏感信息是采用明文存储的，例如项目私钥、Git token、手机号、邮箱等  加密方案： 简单加密（对称加密）：对加密的信息采用对称加密，秘钥保存在本地 高级加密（非对称加密）：对敏感信息对称加密，对加密秘钥进行非对称加密，因为非对称加密对敏感信息大小有限制一般在1k以下，加密速度也和对称">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yunheli.github.io/2017/05/07/2017-5-7-data-secure-ruby/">
+
+
+
+
+
+  <title>数据库敏感信息加密在ruby中的应用 | Will</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Will</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">will's blogs</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yunheli.github.io/2017/05/07/2017-5-7-data-secure-ruby/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Will">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Will">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">数据库敏感信息加密在ruby中的应用</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-07T00:00:00+00:00">
+                2017-05-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="数据库敏感信息加密研究"><a href="#数据库敏感信息加密研究" class="headerlink" title="数据库敏感信息加密研究"></a>数据库敏感信息加密研究</h2><h3 id="数据库敏感信息加密原因"><a href="#数据库敏感信息加密原因" class="headerlink" title="数据库敏感信息加密原因"></a>数据库敏感信息加密原因</h3><blockquote>
+<p>鉴于之前有用户使用阿里云数据库遭到数据泄露问题，库中一部分用户的敏感信息是采用明文存储的，例如项目私钥、Git token、手机号、邮箱等</p>
+</blockquote>
+<h3 id="加密方案："><a href="#加密方案：" class="headerlink" title="加密方案："></a>加密方案：</h3><ul>
+<li>简单加密（对称加密）：<br>对加密的信息采用对称加密，秘钥保存在本地</li>
+<li>高级加密（非对称加密）：<br>对敏感信息对称加密，对加密秘钥进行非对称加密，因为非对称加密对敏感信息大小有限制一般在1k以下，加密速度也和对称加密不是一个量级</li>
+</ul>
+<h3 id="AES（高级加密）概念："><a href="#AES（高级加密）概念：" class="headerlink" title="AES（高级加密）概念："></a>AES（高级加密）概念：</h3><p>  進階加密标准（英语：Advanced Encryption Standard，缩写：AES），在密码学中又称Rijndael加密法，是美国联邦政府采用的一種區塊加密标准。这个标准用来替代原先的DES，已經被多方分析且廣為全世界所使用。經過五年的甄選流程，進階加密標準由美國國家標準與技術研究院（NIST）於2001年11月26日發佈於FIPS PUB 197，並在2002年5月26日成為有效的標準。2006年，進階加密标准已然成為对称密钥加密中最流行的演算法之一</p>
+<h3 id="RSA（非对称加密）概念："><a href="#RSA（非对称加密）概念：" class="headerlink" title="RSA（非对称加密）概念："></a>RSA（非对称加密）概念：</h3><p>  RSA加密演算法是一种非对称加密演算法。在公开密钥加密和电子商业中RSA被广泛使用。RSA是1977年由罗纳德·李维斯特（Ron Rivest）、阿迪·萨莫尔（Adi Shamir）和伦纳德·阿德曼（Leonard Adleman）一起提出的。当时他们三人都在麻省理工学院工作。RSA就是他们三人姓氏开头字母拼在一起组成的。</p>
+<h3 id="针对两种加密方式的解决方案："><a href="#针对两种加密方式的解决方案：" class="headerlink" title="针对两种加密方式的解决方案："></a>针对两种加密方式的解决方案：</h3><p>  大数据加密采用非对称加密和高级加密并行的方式，AES加密的key采用RSA非对称加密之后再对数据加密，这样保证了数据的安全</p>
+<h3 id="数据加密在ruby中的应用"><a href="#数据加密在ruby中的应用" class="headerlink" title="数据加密在ruby中的应用"></a>数据加密在ruby中的应用</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br></pre></td><td class="code"><pre><span class="line"># 重新复制方法，对保存到数据库的数据加密，读取的数据解密</span><br><span class="line">module SensitiveWordEncrypt</span><br><span class="line"></span><br><span class="line">  def self.prepended(base)</span><br><span class="line">    base.extend ClassMethods</span><br><span class="line">  end</span><br><span class="line">  </span><br><span class="line">  module ClassMethods</span><br><span class="line">    def sensitive_words_register(*args)</span><br><span class="line">      instance_eval do </span><br><span class="line">        args.each do |key|</span><br><span class="line">          # 重写key方法</span><br><span class="line">          send(:define_method, &quot;#&#123;key&#125;&quot;) do</span><br><span class="line">            @decrypted_data = super()</span><br><span class="line">            DatabaseCipher.decrypt(@decrypted_data)</span><br><span class="line">          end</span><br><span class="line"></span><br><span class="line">          # 添加 key_without_decrypt 方法获取加密数据</span><br><span class="line">          send(:define_method, &quot;#&#123;key&#125;_without_decrypt&quot;) do</span><br><span class="line">            send(key)</span><br><span class="line">            @decrypted_data</span><br><span class="line">          end</span><br><span class="line"></span><br><span class="line">          # 重写 key= 方法</span><br><span class="line">          send(:define_method, &quot;#&#123;key&#125;=&quot;.to_sym) do |arg|</span><br><span class="line">            super(DatabaseCipher.encrypt(arg))</span><br><span class="line">          end</span><br><span class="line">        end</span><br><span class="line">      end</span><br><span class="line">    end</span><br><span class="line">  end</span><br><span class="line">end</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 数据库加密模块 </span><br><span class="line"># 采用的AES  CBC 加密算法</span><br><span class="line"># RSA加密算法</span><br><span class="line">class DatabaseCipher</span><br><span class="line">  include Singleton </span><br><span class="line"></span><br><span class="line">  attr_accessor :encrypted_aes_key, :aes_iv, :public_key, :private_key</span><br><span class="line"></span><br><span class="line">  # AES加密 CBC算法更安全</span><br><span class="line">  class AES</span><br><span class="line">    attr_accessor :iv, :key</span><br><span class="line">    def initialize(iv, key)</span><br><span class="line">      self.iv = iv</span><br><span class="line">      self.key = key</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    def encrypt(content)</span><br><span class="line">      return content if content.blank?</span><br><span class="line">      cipher = OpenSSL::Cipher::AES.new(128, :CBC)</span><br><span class="line">      cipher.encrypt</span><br><span class="line">      cipher.key = key</span><br><span class="line">      cipher.iv  = iv</span><br><span class="line">      encrypted = cipher.update(content) + cipher.final</span><br><span class="line">      Base64.strict_encode64(encrypted)</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    def decrypt(content)</span><br><span class="line">      return content if content.blank?</span><br><span class="line">      encrypted_string = Base64.decode64(content)</span><br><span class="line">      cipher = OpenSSL::Cipher::AES.new(128, :CBC)</span><br><span class="line">      cipher.decrypt</span><br><span class="line">      cipher.key = key</span><br><span class="line">      cipher.iv  = iv</span><br><span class="line">      result = cipher.update(encrypted_string) + cipher.final      </span><br><span class="line">    end</span><br><span class="line">  end</span><br><span class="line"></span><br><span class="line">  # RSA非对称加密</span><br><span class="line">  class RSA</span><br><span class="line">    attr_accessor :public_key, :private_key, :pub_rsa, :pri_rsa</span><br><span class="line">    def initialize(public_key, private_key)</span><br><span class="line">      self.public_key = public_key</span><br><span class="line">      self.private_key = private_key</span><br><span class="line">      self.pub_rsa = OpenSSL::PKey::RSA.new(public_key)</span><br><span class="line">      self.pri_rsa = OpenSSL::PKey::RSA.new(private_key)</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    def encrypt(content)</span><br><span class="line">      return content if content.blank?</span><br><span class="line">      encrypted = pub_rsa.public_encrypt(content)</span><br><span class="line">      Base64.strict_encode64(encrypted)</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    def decrypt(content)</span><br><span class="line">      return content if content.blank?</span><br><span class="line">      encrypted_string = Base64.decode64(content)</span><br><span class="line">      pri_rsa.private_decrypt(encrypted_string)</span><br><span class="line">    end</span><br><span class="line">    class &lt;&lt; self</span><br><span class="line">    end</span><br><span class="line">  end</span><br><span class="line"></span><br><span class="line">  def configure </span><br><span class="line">    yield(self) if block_given?</span><br><span class="line">    @rsa = RSA.new(public_key, private_key)</span><br><span class="line">  end</span><br><span class="line"></span><br><span class="line">  def aes </span><br><span class="line">    aes_key = decrypt_aes_key</span><br><span class="line">    @aes ||= AES.new(aes_key, aes_iv)</span><br><span class="line">  end</span><br><span class="line"></span><br><span class="line">  def rsa</span><br><span class="line">    @rsa ||= RSA.new(public_key, private_key)</span><br><span class="line">  end</span><br><span class="line"></span><br><span class="line">  def encrypt(content)</span><br><span class="line">    return content if content.blank?</span><br><span class="line">    encrypted = aes.encrypt(content)</span><br><span class="line">  rescue Exception =&gt; e</span><br><span class="line">    Rails.logger.info(&quot;DatabaseCipher.encrypt error: #&#123;e&#125;&quot;)</span><br><span class="line">    content</span><br><span class="line">  end</span><br><span class="line"></span><br><span class="line">  def decrypt(content)</span><br><span class="line">    return content if content.blank?</span><br><span class="line">    decrypted = aes.decrypt(content)</span><br><span class="line">  rescue Exception =&gt; e </span><br><span class="line">    Rails.logger.info(&quot;DatabaseCipher.decrypt error: #&#123;e&#125;&quot;)</span><br><span class="line">    content    </span><br><span class="line">  end</span><br><span class="line"></span><br><span class="line">  def encrypt_aes_key</span><br><span class="line">    @encrypted_aes_key ||= @rsa.encrypt(aes_key)</span><br><span class="line">  end</span><br><span class="line"></span><br><span class="line">  def decrypt_aes_key</span><br><span class="line">    @decrypted_aes_key ||= @rsa.decrypt(encrypted_aes_key)</span><br><span class="line">  end</span><br><span class="line"></span><br><span class="line">  class &lt;&lt; self</span><br><span class="line">    def method_missing(name, *args, &amp;block)</span><br><span class="line">      instance.send(name, *args, &amp;block)</span><br><span class="line">    end</span><br><span class="line">  end</span><br><span class="line">end</span><br><span class="line"></span><br><span class="line"># ActiveModel中引入加密模块</span><br><span class="line">class User</span><br><span class="line">  prepend SensitiveWordEncrypt</span><br><span class="line">  # 要加密的数据</span><br><span class="line">  sensitive_words_register(:access_token) </span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/ruby/" rel="tag"># ruby</a>
+          
+            <a href="/tags/secure/" rel="tag"># secure</a>
+          
+            <a href="/tags/AES/" rel="tag"># AES</a>
+          
+            <a href="/tags/RSA/" rel="tag"># RSA</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/05/21/2016-05-21-node-live-record/" rel="next" title="Node Live 技术分享笔记">
+                <i class="fa fa-chevron-left"></i> Node Live 技术分享笔记
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/05/18/2017-05-18-diary-on-line-error/" rel="prev" title="上线问题记录">
+                上线问题记录 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Will</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">24</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/yunheli" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:liyunhehappy6@163.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#数据库敏感信息加密研究"><span class="nav-number">1.</span> <span class="nav-text">数据库敏感信息加密研究</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#数据库敏感信息加密原因"><span class="nav-number">1.1.</span> <span class="nav-text">数据库敏感信息加密原因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#加密方案："><span class="nav-number">1.2.</span> <span class="nav-text">加密方案：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AES（高级加密）概念："><span class="nav-number">1.3.</span> <span class="nav-text">AES（高级加密）概念：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RSA（非对称加密）概念："><span class="nav-number">1.4.</span> <span class="nav-text">RSA（非对称加密）概念：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#针对两种加密方式的解决方案："><span class="nav-number">1.5.</span> <span class="nav-text">针对两种加密方式的解决方案：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数据加密在ruby中的应用"><span class="nav-number">1.6.</span> <span class="nav-text">数据加密在ruby中的应用</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Will</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

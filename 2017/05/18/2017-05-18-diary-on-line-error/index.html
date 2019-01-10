@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="ruby,diary,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="今天遇到的问题？ 由于自己太过自信，心里想一个小功能怎么会出问题，再说也在alpha环境测了，然而并不是还是因为自己的疏忽出错了  上线一个小功能网站怎么会挂掉？  主要是因为网站的主逻辑依赖的这个功能没有添加catch导致，网站被crash掉,小功能没有完全测试覆盖导致在使用redis.lpush的时候 push 的是空数组，导致报错 网站挂掉怎么处理的？rollback怎么会不起作用？  出了">
+<meta name="keywords" content="ruby,diary">
+<meta property="og:type" content="article">
+<meta property="og:title" content="上线问题记录">
+<meta property="og:url" content="http://yunheli.github.io/2017/05/18/2017-05-18-diary-on-line-error/index.html">
+<meta property="og:site_name" content="Will">
+<meta property="og:description" content="今天遇到的问题？ 由于自己太过自信，心里想一个小功能怎么会出问题，再说也在alpha环境测了，然而并不是还是因为自己的疏忽出错了  上线一个小功能网站怎么会挂掉？  主要是因为网站的主逻辑依赖的这个功能没有添加catch导致，网站被crash掉,小功能没有完全测试覆盖导致在使用redis.lpush的时候 push 的是空数组，导致报错 网站挂掉怎么处理的？rollback怎么会不起作用？  出了">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-01-10T09:38:05.658Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="上线问题记录">
+<meta name="twitter:description" content="今天遇到的问题？ 由于自己太过自信，心里想一个小功能怎么会出问题，再说也在alpha环境测了，然而并不是还是因为自己的疏忽出错了  上线一个小功能网站怎么会挂掉？  主要是因为网站的主逻辑依赖的这个功能没有添加catch导致，网站被crash掉,小功能没有完全测试覆盖导致在使用redis.lpush的时候 push 的是空数组，导致报错 网站挂掉怎么处理的？rollback怎么会不起作用？  出了">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yunheli.github.io/2017/05/18/2017-05-18-diary-on-line-error/">
+
+
+
+
+
+  <title>上线问题记录 | Will</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Will</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">will's blogs</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yunheli.github.io/2017/05/18/2017-05-18-diary-on-line-error/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Will">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Will">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">上线问题记录</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-18T00:00:00+00:00">
+                2017-05-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="今天遇到的问题？"><a href="#今天遇到的问题？" class="headerlink" title="今天遇到的问题？"></a>今天遇到的问题？</h2><blockquote>
+<p>由于自己太过自信，心里想一个小功能怎么会出问题，再说也在alpha环境测了，然而并不是还是因为自己的疏忽出错了</p>
+</blockquote>
+<h3 id="上线一个小功能网站怎么会挂掉？"><a href="#上线一个小功能网站怎么会挂掉？" class="headerlink" title="上线一个小功能网站怎么会挂掉？"></a>上线一个小功能网站怎么会挂掉？</h3><p>  主要是因为网站的主逻辑依赖的这个功能没有添加catch导致，网站被crash掉,小功能没有完全测试覆盖导致在使用redis.lpush的时候 push 的是空数组，导致报错</p>
+<h3 id="网站挂掉怎么处理的？rollback怎么会不起作用？"><a href="#网站挂掉怎么处理的？rollback怎么会不起作用？" class="headerlink" title="网站挂掉怎么处理的？rollback怎么会不起作用？"></a>网站挂掉怎么处理的？rollback怎么会不起作用？</h3><p>  出了问题第一时间 cap deploy:rollback但是没有起作用，反而出现了更加严重的问题current目录索引的release为空，为什么？？？？？</p>
+<p>  原因是：<br>    并不是rollback不执行，而是之前部署会一半一半的部署，也就是假如四台机器的话会先部署两台机器之后再部署两台机器，所以就导致release版本的时间戳不同，所以在rollback时选择rollback的release版本时导致两台机器link的地址为空导致部署失败</p>
+<pre><code>cap deploy:rollback的原理：
+  - 先kill掉当前跑的进程
+  - 通过ls -xl . 来选择最近的第二个版本如果没有设置回退的版本的话，假如设置了就会回退设置的版本
+  - 软连接到current
+  - 启动服务
+</code></pre><h3 id="问题在哪？"><a href="#问题在哪？" class="headerlink" title="问题在哪？"></a>问题在哪？</h3><p>  首先个人方面，为了赶进度没有补充完测试，再者cap deploy:rollback设计有缺陷（个人观点）</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>  一定要写测试<br>  假如测试覆盖不到<br>  一定要加开关随时能关掉小功能<br>  上线的小功能一定要加catch<br>  cap console 可以在线调试其实原理很简单，通过程序ssh 多台服务器，等待命令 loop</p>
+<h3 id="上点源码："><a href="#上点源码：" class="headerlink" title="上点源码："></a>上点源码：</h3><p>  desc “Execute remote commands”<br>  task :console do<br>    stage = fetch(:stage)<br>    puts I18n.t(“console.welcome”, scope: :capistrano, stage: stage)<br>    loop do<br>      print “#{stage}&gt; “</p>
+<pre><code>  command = (input = $stdin.gets) ? input.chomp : &quot;exit&quot;
+
+  next if command.empty?
+
+  if %w{quit exit q}.include? command
+    puts t(&quot;console.bye&quot;)
+    break
+  else
+    begin
+      on roles :all do
+        execute command
+      end
+    rescue =&gt; e
+      puts e
+    end
+  end
+end
+</code></pre><p>  end</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/ruby/" rel="tag"># ruby</a>
+          
+            <a href="/tags/diary/" rel="tag"># diary</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/05/07/2017-5-7-data-secure-ruby/" rel="next" title="数据库敏感信息加密在ruby中的应用">
+                <i class="fa fa-chevron-left"></i> 数据库敏感信息加密在ruby中的应用
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/05/20/2017-5-20-rvm-working/" rel="prev" title="rvm 工作原理">
+                rvm 工作原理 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Will</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">24</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/yunheli" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:liyunhehappy6@163.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#今天遇到的问题？"><span class="nav-number">1.</span> <span class="nav-text">今天遇到的问题？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#上线一个小功能网站怎么会挂掉？"><span class="nav-number">1.1.</span> <span class="nav-text">上线一个小功能网站怎么会挂掉？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#网站挂掉怎么处理的？rollback怎么会不起作用？"><span class="nav-number">1.2.</span> <span class="nav-text">网站挂掉怎么处理的？rollback怎么会不起作用？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#问题在哪？"><span class="nav-number">1.3.</span> <span class="nav-text">问题在哪？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#总结"><span class="nav-number">1.4.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#上点源码："><span class="nav-number">1.5.</span> <span class="nav-text">上点源码：</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Will</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

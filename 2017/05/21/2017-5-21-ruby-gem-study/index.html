@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="ruby,gem,require,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="gem install 后面执行了什么？ 大家肯定认为 gem 肯定是一个包就类似 bundle 的似得一个gem包，但是当我们执行which gem -&amp;gt;   1234567891011121314151617require &amp;apos;rubygems&amp;apos;require &amp;apos;rubygems/gem_runner&amp;apos;require &amp;apos;rubygems/e">
+<meta name="keywords" content="ruby,gem,require">
+<meta property="og:type" content="article">
+<meta property="og:title" content="gem install 和 require 工作原理">
+<meta property="og:url" content="http://yunheli.github.io/2017/05/21/2017-5-21-ruby-gem-study/index.html">
+<meta property="og:site_name" content="Will">
+<meta property="og:description" content="gem install 后面执行了什么？ 大家肯定认为 gem 肯定是一个包就类似 bundle 的似得一个gem包，但是当我们执行which gem -&amp;gt;   1234567891011121314151617require &amp;apos;rubygems&amp;apos;require &amp;apos;rubygems/gem_runner&amp;apos;require &amp;apos;rubygems/e">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-01-10T09:38:05.658Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="gem install 和 require 工作原理">
+<meta name="twitter:description" content="gem install 后面执行了什么？ 大家肯定认为 gem 肯定是一个包就类似 bundle 的似得一个gem包，但是当我们执行which gem -&amp;gt;   1234567891011121314151617require &amp;apos;rubygems&amp;apos;require &amp;apos;rubygems/gem_runner&amp;apos;require &amp;apos;rubygems/e">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yunheli.github.io/2017/05/21/2017-5-21-ruby-gem-study/">
+
+
+
+
+
+  <title>gem install 和 require 工作原理 | Will</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Will</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">will's blogs</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yunheli.github.io/2017/05/21/2017-5-21-ruby-gem-study/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Will">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Will">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">gem install 和 require 工作原理</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-05-21T00:00:00+00:00">
+                2017-05-21
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="gem-install-后面执行了什么？"><a href="#gem-install-后面执行了什么？" class="headerlink" title="gem install 后面执行了什么？"></a>gem install 后面执行了什么？</h2><blockquote>
+<p>大家肯定认为 gem 肯定是一个包就类似 bundle 的似得一个gem包，但是当我们执行<br>which gem -&gt; </p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">require &apos;rubygems&apos;</span><br><span class="line">require &apos;rubygems/gem_runner&apos;</span><br><span class="line">require &apos;rubygems/exceptions&apos;</span><br><span class="line"></span><br><span class="line">required_version = Gem::Requirement.new &quot;&gt;= 1.8.7&quot;</span><br><span class="line"></span><br><span class="line">unless required_version.satisfied_by? Gem.ruby_version then</span><br><span class="line">  abort &quot;Expected Ruby Version #&#123;required_version&#125;, is #&#123;Gem.ruby_version&#125;&quot;</span><br><span class="line">end</span><br><span class="line"></span><br><span class="line">args = ARGV.clone</span><br><span class="line"></span><br><span class="line">begin</span><br><span class="line">  Gem::GemRunner.new.run args</span><br><span class="line">rescue Gem::SystemExitException =&gt; e</span><br><span class="line">  exit e.exit_code</span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>由此可见 gem 其实就是一个执行 <code>shell</code> 里面引用 rubygems 但是rubygems又是什么，其实rubygems 是 rubygem-update 这个gem包定义的，rubygem-update 这个gem 包定义 gem 的下载,解析,安装</p>
+</blockquote>
+<h3 id="那我们具体来分析-gem-install-具体做了哪几件事？"><a href="#那我们具体来分析-gem-install-具体做了哪几件事？" class="headerlink" title="那我们具体来分析 gem install 具体做了哪几件事？"></a>那我们具体来分析 gem install 具体做了哪几件事？</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">举个例子：</span><br><span class="line">  gem install oj</span><br><span class="line">  先去 rubygem.org 去下载 指定版本的gem</span><br><span class="line">  之后解压gem</span><br><span class="line">  之后判断gem的完整性，就是判断是否是一个完整的gem，是通过gemspec文件来判断</span><br><span class="line">  之后通过Gem::Specification 来查看是否已经注册过此版本的gem，如果注册了直接next</span><br><span class="line">  之后将gemspec 添加到 Gem::Specification 指定的目录 也就是gem_path的相对目录 specifications</span><br><span class="line">  之后查找GEM_HOME GEM_PATH</span><br><span class="line">  之后解压gem到GEM_PATH</span><br><span class="line">  之后cp gem到cache_gem</span><br><span class="line">  之后cp gem的bin文件到GEM_HOME/bin目录</span><br><span class="line">  这就是一个gem install 完成</span><br><span class="line"></span><br><span class="line">  对应命令：</span><br><span class="line">    gem unpack oj</span><br><span class="line">    gem environment</span><br></pre></td></tr></table></figure>
+<h3 id="那我们require-oj时后台逻辑做了什么呢？"><a href="#那我们require-oj时后台逻辑做了什么呢？" class="headerlink" title="那我们require oj时后台逻辑做了什么呢？"></a>那我们require oj时后台逻辑做了什么呢？</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">require oj 只是做了这么几步：</span><br><span class="line">  1、首先查找Gem::Specification看这个gem的name是否注册，注册了的话继续, </span><br><span class="line">    - spec = Gem::Specification.find_by_path(&apos;oj&apos;)</span><br><span class="line">  2、将 $GEM_PATH/gems/oj/lib &gt;&gt; $LOAD_PATH</span><br><span class="line">    - spec.activate # 这时候会把加到LOAD_PATH</span><br><span class="line">  3、之后会将$GEM_PATH/gems/oj/lib/oj.rb require 到内存，可以直接通过$:来查看</span><br><span class="line">    - kernel原生的require也就是 gem_original_require</span><br></pre></td></tr></table></figure>
+<h3 id="那我们看-rubygem-又对require做了什么？"><a href="#那我们看-rubygem-又对require做了什么？" class="headerlink" title="那我们看 rubygem 又对require做了什么？"></a>那我们看 rubygem 又对require做了什么？</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">rubygem又对kernel的require文件做了重写</span><br><span class="line">下面是 require 的源码</span><br><span class="line"> </span><br><span class="line"> # 首先判断gem_original_require是否定义</span><br><span class="line"> # gem_original_require就是kernel的别名</span><br><span class="line"> if defined?(gem_original_require) then</span><br><span class="line">  # Ruby ships with a custom_require, override its require</span><br><span class="line">  remove_method :require</span><br><span class="line">else</span><br><span class="line">  ##</span><br><span class="line">  # The Kernel#require from before RubyGems was loaded.</span><br><span class="line"></span><br><span class="line">  alias gem_original_require require</span><br><span class="line">  private :gem_original_require</span><br><span class="line">end</span><br><span class="line"></span><br><span class="line"># rubygem 重写的 require</span><br><span class="line">def require path</span><br><span class="line">  RUBYGEMS_ACTIVATION_MONITOR.enter</span><br><span class="line"></span><br><span class="line">  path = path.to_path if path.respond_to? :to_path</span><br><span class="line"></span><br><span class="line"># 首先去查找对应的gemspec是否注册过</span><br><span class="line">  spec = Gem.find_unresolved_default_spec(path)</span><br><span class="line">  if spec</span><br><span class="line">    Gem.remove_unresolved_default_spec(spec)</span><br><span class="line">    # 注册过就直接加载gem</span><br><span class="line">    gem(spec.name)</span><br><span class="line">  end</span><br><span class="line"></span><br><span class="line">  # If there are no unresolved deps, then we can use just try</span><br><span class="line">  # normal require handle loading a gem from the rescue below.</span><br><span class="line"></span><br><span class="line"># 如果没有</span><br><span class="line">  if Gem::Specification.unresolved_deps.empty? then</span><br><span class="line">    RUBYGEMS_ACTIVATION_MONITOR.exit</span><br><span class="line">    # 就调用kernel的require</span><br><span class="line">    return gem_original_require(path)</span><br><span class="line">  end</span><br><span class="line">  ..........</span><br></pre></td></tr></table></figure>
+<p>   学习链接： <a href="http://www.justinweiss.com/articles/how-do-gems-work//" target="_blank" rel="noopener">http://www.justinweiss.com/articles/how-do-gems-work//</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/ruby/" rel="tag"># ruby</a>
+          
+            <a href="/tags/gem/" rel="tag"># gem</a>
+          
+            <a href="/tags/require/" rel="tag"># require</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/05/20/2017-5-20-rvm-working/" rel="next" title="rvm 工作原理">
+                <i class="fa fa-chevron-left"></i> rvm 工作原理
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/05/22/2017-5-22-raptor-puma-compare/" rel="prev" title="Raptor、Unicorn、Puma、Torquebox">
+                Raptor、Unicorn、Puma、Torquebox <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Will</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">24</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/yunheli" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:liyunhehappy6@163.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#gem-install-后面执行了什么？"><span class="nav-number">1.</span> <span class="nav-text">gem install 后面执行了什么？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#那我们具体来分析-gem-install-具体做了哪几件事？"><span class="nav-number">1.1.</span> <span class="nav-text">那我们具体来分析 gem install 具体做了哪几件事？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#那我们require-oj时后台逻辑做了什么呢？"><span class="nav-number">1.2.</span> <span class="nav-text">那我们require oj时后台逻辑做了什么呢？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#那我们看-rubygem-又对require做了什么？"><span class="nav-number">1.3.</span> <span class="nav-text">那我们看 rubygem 又对require做了什么？</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Will</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

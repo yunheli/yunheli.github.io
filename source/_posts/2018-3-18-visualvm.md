@@ -1,7 +1,7 @@
 ---
 layout: post
 title: VisualVm monitor remote jvm
-date: 2018-03-8 00:00
+date: 2018-03-18 00:00
 tags: [java, jvm, JVisualVM]
 ---
 
